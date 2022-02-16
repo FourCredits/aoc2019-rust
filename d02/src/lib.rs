@@ -1,5 +1,3 @@
-use intcode;
-
 pub fn part_a(input: &str) -> i64 {
     let program = {
         let mut program: Vec<i64> = input
