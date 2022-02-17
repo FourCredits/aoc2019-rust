@@ -1,30 +1,25 @@
 pub fn part_a(input: &str) -> u64 {
     let (lo, hi) = input.split_once('-').unwrap();
     let (lo, hi) = (lo.parse::<u64>().unwrap(), hi.parse::<u64>().unwrap());
-    count((lo..=hi).filter(|&n| matches_criteria1(n)))
+    (lo..=hi).filter(matches_criteria1).fold(0, |a, _| a + 1)
 }
 
 pub fn part_b(input: &str) -> u64 {
     let (lo, hi) = input.split_once('-').unwrap();
     let (lo, hi) = (lo.parse::<u64>().unwrap(), hi.parse::<u64>().unwrap());
-    count((lo..=hi).filter(|&n| matches_criteria2(n)))
+    (lo..=hi).filter(matches_criteria2).fold(0, |a, _| a + 1)
 }
 
-// Seeing as len only works on ranges of certain bit sizes
-fn count<T: Iterator>(range: T) -> u64 {
-    let mut total = 0;
-    for _ in range {
-        total += 1;
-    }
-    total
-}
-
-fn matches_criteria1(n: u64) -> bool {
-    let digits = digits(n);
-    let pairs: Vec<_> = digits.windows(2).collect();
+fn matches_criteria1(n: &u64) -> bool {
+    let digits = digits(*n);
     digits.len() == 6
-        && pairs.iter().all(|pair| pair[0] <= pair[1])
-        && pairs.iter().any(|pair| pair[0] == pair[1])
+        && digits.windows(2).all(|pair| pair[0] <= pair[1])
+        && digits.windows(2).any(|pair| pair[0] == pair[1])
+}
+
+fn matches_criteria2(n: &u64) -> bool {
+    let digits = digits(*n);
+    digits.len() == 6 && digits.windows(2).all(|pair| pair[0] <= pair[1]) && group_of_two(digits)
 }
 
 fn group_of_two(digits: Vec<u8>) -> bool {
@@ -47,11 +42,6 @@ fn group_of_two(digits: Vec<u8>) -> bool {
     false
 }
 
-fn matches_criteria2(n: u64) -> bool {
-    let digits = digits(n);
-    digits.len() == 6 && digits.windows(2).all(|pair| pair[0] <= pair[1]) && group_of_two(digits)
-}
-
 fn digits(mut n: u64) -> Vec<u8> {
     let mut res = Vec::new();
     while n > 0 {
@@ -69,16 +59,16 @@ mod tests {
 
     #[test]
     fn matches_criteria1_test() {
-        assert!(matches_criteria1(111111));
-        assert!(!matches_criteria1(223450));
-        assert!(!matches_criteria1(123789));
+        assert!(matches_criteria1(&111111));
+        assert!(!matches_criteria1(&223450));
+        assert!(!matches_criteria1(&123789));
     }
 
     #[test]
     fn matches_criteria2_test() {
-        assert!(matches_criteria2(112233));
-        assert!(!matches_criteria2(123444));
-        assert!(matches_criteria2(111122));
+        assert!(matches_criteria2(&112233));
+        assert!(!matches_criteria2(&123444));
+        assert!(matches_criteria2(&111122));
     }
 
     #[test]
