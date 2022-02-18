@@ -1,31 +1,23 @@
+use intcode::IntcodeComputer;
+
 pub fn part_a(input: &str) -> i64 {
     let program = {
-        let mut program: Vec<i64> = input
-            .trim()
-            .split(',')
-            .map(|s| s.parse::<i64>().unwrap())
-            .collect();
+        let mut program = IntcodeComputer::parse_program(input);
         program[1] = 12;
         program[2] = 2;
         program
     };
-    let finished = intcode::run_program(program);
-    println!("{:?}", finished[0]);
-    finished[0]
+    IntcodeComputer::run_program(program, None).data[0]
 }
 
 pub fn part_b(input: &str) -> Option<i64> {
-    let mut start_program: Vec<i64> = input
-        .trim()
-        .split(',')
-        .map(|s| s.parse::<i64>().unwrap())
-        .collect();
+    let mut start_program = IntcodeComputer::parse_program(input);
     for noun in 0..=99 {
         start_program[1] = noun;
         for verb in 0..=99 {
             start_program[2] = verb;
-            let finished_program = intcode::run_program(start_program.clone());
-            if finished_program[0] == 19690720 {
+            let computer = IntcodeComputer::run_program(start_program.clone(), None);
+            if computer.data[0] == 19690720 {
                 return Some(100 * noun + verb);
             }
         }

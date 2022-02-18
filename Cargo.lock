@@ -22,5 +22,12 @@ name = "d04"
 version = "0.1.0"
 
 [[package]]
+name = "d05"
+version = "0.1.0"
+dependencies = [
+ "intcode",
+]
+
+[[package]]
 name = "intcode"
 version = "0.1.0"
