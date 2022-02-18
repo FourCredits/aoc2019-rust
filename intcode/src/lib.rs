@@ -52,144 +52,75 @@ impl IntcodeComputer {
         }
     }
 
-    fn add(&mut self) {
+    fn get_input_param(&self, position: u32, parameter: usize) -> i64 {
         let opcode = self.data[self.pc];
-        let parameter1 = match (opcode / 100) % 10 {
-            0 => self.data[self.data[self.pc + 1] as usize],
-            1 => self.data[self.pc + 1],
+        match (opcode / (10i64.pow(position + 1))) % 10 {
+            0 => self.data[self.data[self.pc + parameter] as usize],
+            1 => self.data[self.pc + parameter],
             _ => unreachable!(),
-        };
-        let parameter2 = match (opcode / 1000) % 10 {
-            0 => self.data[self.data[self.pc + 2] as usize],
-            1 => self.data[self.pc + 2],
+        }
+    }
+
+    fn get_output_param(&self, position: u32, parameter: usize) -> usize {
+        let opcode = self.data[self.pc];
+        (match (opcode / (10i64.pow(position + 1))) % 10 {
+            0 => self.data[self.pc + parameter],
             _ => unreachable!(),
-        };
-        let parameter3 = match opcode / 10000 {
-            0 => self.data[self.pc + 3] as usize,
-            _ => unreachable!(),
-        };
-        self.data[parameter3] = parameter1 + parameter2;
+        }) as usize
+    }
+
+    fn binary_op<F>(&mut self, f: F)
+    where
+        F: Fn(i64, i64) -> i64,
+    {
+        let parameter1 = self.get_input_param(1, 1);
+        let parameter2 = self.get_input_param(2, 2);
+        let parameter3 = self.get_output_param(3, 3);
+        self.data[parameter3] = f(parameter1, parameter2);
         self.pc += 4;
+    }
+
+    fn add(&mut self) {
+        self.binary_op(|x, y| x + y);
     }
 
     fn mult(&mut self) {
-        let opcode = self.data[self.pc];
-        let parameter1 = match (opcode / 100) % 10 {
-            0 => self.data[self.data[self.pc + 1] as usize],
-            1 => self.data[self.pc + 1],
-            _ => unreachable!(),
-        };
-        let parameter2 = match (opcode / 1000) % 10 {
-            0 => self.data[self.data[self.pc + 2] as usize],
-            1 => self.data[self.pc + 2],
-            _ => unreachable!(),
-        };
-        let parameter3 = match opcode / 10000 {
-            0 => self.data[self.pc + 3] as usize,
-            _ => unreachable!(),
-        };
-        self.data[parameter3] = parameter1 * parameter2;
-        self.pc += 4;
+        self.binary_op(|x, y| x * y);
     }
 
     fn input(&mut self) {
-        let opcode = self.data[self.pc];
-        let destination = match (opcode / 100) % 10 {
-            0 => self.data[self.pc + 1] as usize,
-            _ => unreachable!(),
-        };
-        let input = self.input.pop().expect("No more input!");
-        self.data[destination] = input;
+        let destination = self.get_output_param(1, 1);
+        self.data[destination] = self.input.pop().expect("No more input!");
         self.pc += 2;
     }
 
     fn output(&mut self) {
-        let opcode = self.data[self.pc];
-        let output = match (opcode / 100) % 10 {
-            0 => self.data[self.data[self.pc + 1] as usize],
-            1 => self.data[self.pc + 1],
-            _ => unreachable!(),
-        };
-        self.output.push(output);
+        self.output.push(self.get_input_param(1, 1));
         self.pc += 2;
     }
 
     fn jump_if_true(&mut self) {
-        let opcode = self.data[self.pc];
-        let parameter1 = match (opcode / 100) % 10 {
-            0 => self.data[self.data[self.pc + 1] as usize],
-            1 => self.data[self.pc + 1],
-            _ => unreachable!(),
-        };
-        let parameter2 = match (opcode / 1000) % 10 {
-            0 => self.data[self.data[self.pc + 2] as usize],
-            1 => self.data[self.pc + 2],
-            _ => unreachable!(),
-        } as usize;
-        if parameter1 != 0 {
-            self.pc = parameter2;
+        if self.get_input_param(1, 1) != 0 {
+            self.pc = self.get_input_param(2, 2) as usize;
         } else {
             self.pc += 3;
         }
     }
 
     fn jump_if_false(&mut self) {
-        let opcode = self.data[self.pc];
-        let parameter1 = match (opcode / 100) % 10 {
-            0 => self.data[self.data[self.pc + 1] as usize],
-            1 => self.data[self.pc + 1],
-            _ => unreachable!(),
-        };
-        let parameter2 = match (opcode / 1000) % 10 {
-            0 => self.data[self.data[self.pc + 2] as usize],
-            1 => self.data[self.pc + 2],
-            _ => unreachable!(),
-        } as usize;
-        if parameter1 == 0 {
-            self.pc = parameter2;
+        if self.get_input_param(1, 1) == 0 {
+            self.pc = self.get_input_param(2, 2) as usize;
         } else {
             self.pc += 3;
         }
     }
 
     fn less_than(&mut self) {
-        let opcode = self.data[self.pc];
-        let parameter1 = match (opcode / 100) % 10 {
-            0 => self.data[self.data[self.pc + 1] as usize],
-            1 => self.data[self.pc + 1],
-            _ => unreachable!(),
-        };
-        let parameter2 = match (opcode / 1000) % 10 {
-            0 => self.data[self.data[self.pc + 2] as usize],
-            1 => self.data[self.pc + 2],
-            _ => unreachable!(),
-        };
-        let parameter3 = match opcode / 10000 {
-            0 => self.data[self.pc + 3] as usize,
-            _ => unreachable!(),
-        };
-        self.data[parameter3] = if parameter1 < parameter2 { 1 } else { 0 };
-        self.pc += 4;
+        self.binary_op(|x, y| if x < y { 1 } else { 0 });
     }
 
     fn equals(&mut self) {
-        let opcode = self.data[self.pc];
-        let parameter1 = match (opcode / 100) % 10 {
-            0 => self.data[self.data[self.pc + 1] as usize],
-            1 => self.data[self.pc + 1],
-            _ => unreachable!(),
-        };
-        let parameter2 = match (opcode / 1000) % 10 {
-            0 => self.data[self.data[self.pc + 2] as usize],
-            1 => self.data[self.pc + 2],
-            _ => unreachable!(),
-        };
-        let parameter3 = match opcode / 10000 {
-            0 => self.data[self.pc + 3] as usize,
-            _ => unreachable!(),
-        };
-        self.data[parameter3] = if parameter1 == parameter2 { 1 } else { 0 };
-        self.pc += 4;
+        self.binary_op(|x, y| if x == y { 1 } else { 0 });
     }
 
     fn halt(&mut self) {
@@ -198,6 +129,7 @@ impl IntcodeComputer {
 
     pub fn run(&mut self) {
         while !self.halted {
+            // println!("{:?}", self);
             self.step();
         }
     }
