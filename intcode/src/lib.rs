@@ -133,6 +133,16 @@ impl IntcodeComputer {
             self.step();
         }
     }
+
+    pub fn add_input(&mut self, new_input: i64) {
+        self.input.insert(0, new_input);
+    }
+
+    pub fn run_until_needs_input(&mut self) {
+        while !(self.halted || (self.data[self.pc] % 100 == 3 && self.input.is_empty())) {
+            self.step();
+        }
+    }
 }
 
 #[cfg(test)]
