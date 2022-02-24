@@ -1,8 +1,11 @@
+use std::collections::HashMap;
+
 #[derive(Debug)]
 pub struct IntcodeComputer {
     pub pc: usize,
+    pub relative_base: i64,
     pub halted: bool,
-    pub data: Vec<i64>,
+    pub data: HashMap<usize, i64>,
     pub input: Vec<i64>,
     pub output: Vec<i64>,
 }
@@ -19,8 +22,9 @@ impl IntcodeComputer {
     pub fn new(data: Vec<i64>, input: Option<Vec<i64>>) -> IntcodeComputer {
         IntcodeComputer {
             pc: 0,
+            relative_base: 0,
             halted: false,
-            data,
+            data: data.into_iter().enumerate().collect(),
             // Allows us to pop from the vector more easily
             input: if let Some(i) = input {
                 i.into_iter().rev().collect()
@@ -38,7 +42,7 @@ impl IntcodeComputer {
     }
 
     fn step(&mut self) {
-        match self.data[self.pc] % 100 {
+        match self.data[&self.pc] % 100 {
             1 => self.add(),
             2 => self.mult(),
             3 => self.input(),
@@ -47,36 +51,46 @@ impl IntcodeComputer {
             6 => self.jump_if_false(),
             7 => self.less_than(),
             8 => self.equals(),
+            9 => self.adjust_relative_base(),
             99 => self.halt(),
             _ => unimplemented!(),
         }
     }
 
-    fn get_input_param(&self, position: u32, parameter: usize) -> i64 {
-        let opcode = self.data[self.pc];
+    fn get_mem(&self, address: usize) -> i64 {
+        *self.data.get(&address).unwrap_or(&0)
+    }
+
+    fn read_from_param(&self, position: u32) -> i64 {
+        let opcode = self.get_mem(self.pc);
+        let parameter_value = self.get_mem(self.pc + position as usize);
         match (opcode / (10i64.pow(position + 1))) % 10 {
-            0 => self.data[self.data[self.pc + parameter] as usize],
-            1 => self.data[self.pc + parameter],
+            0 => self.get_mem(parameter_value as usize),
+            1 => parameter_value,
+            2 => self.get_mem((self.relative_base + parameter_value).try_into().unwrap()),
             _ => unreachable!(),
         }
     }
 
-    fn get_output_param(&self, position: u32, parameter: usize) -> usize {
-        let opcode = self.data[self.pc];
-        (match (opcode / (10i64.pow(position + 1))) % 10 {
-            0 => self.data[self.pc + parameter],
+    fn write_to_param(&mut self, position: u32, value_to_write: i64) {
+        let opcode = self.get_mem(self.pc);
+        let parameter_value = self.get_mem(self.pc + position as usize);
+        let address_to_write_to = match (opcode / (10i64.pow(position + 1))) % 10 {
+            0 => parameter_value,
+            2 => self.relative_base + parameter_value,
             _ => unreachable!(),
-        }) as usize
+        };
+        self.data
+            .insert(address_to_write_to as usize, value_to_write);
     }
 
     fn binary_op<F>(&mut self, f: F)
     where
         F: Fn(i64, i64) -> i64,
     {
-        let parameter1 = self.get_input_param(1, 1);
-        let parameter2 = self.get_input_param(2, 2);
-        let parameter3 = self.get_output_param(3, 3);
-        self.data[parameter3] = f(parameter1, parameter2);
+        let parameter1 = self.read_from_param(1);
+        let parameter2 = self.read_from_param(2);
+        self.write_to_param(3, f(parameter1, parameter2));
         self.pc += 4;
     }
 
@@ -89,27 +103,27 @@ impl IntcodeComputer {
     }
 
     fn input(&mut self) {
-        let destination = self.get_output_param(1, 1);
-        self.data[destination] = self.input.pop().expect("No more input!");
+        let input_value = self.input.pop().expect("No more input!");
+        self.write_to_param(1, input_value);
         self.pc += 2;
     }
 
     fn output(&mut self) {
-        self.output.push(self.get_input_param(1, 1));
+        self.output.push(self.read_from_param(1));
         self.pc += 2;
     }
 
     fn jump_if_true(&mut self) {
-        if self.get_input_param(1, 1) != 0 {
-            self.pc = self.get_input_param(2, 2) as usize;
+        if self.read_from_param(1) != 0 {
+            self.pc = self.read_from_param(2) as usize;
         } else {
             self.pc += 3;
         }
     }
 
     fn jump_if_false(&mut self) {
-        if self.get_input_param(1, 1) == 0 {
-            self.pc = self.get_input_param(2, 2) as usize;
+        if self.read_from_param(1) == 0 {
+            self.pc = self.read_from_param(2) as usize;
         } else {
             self.pc += 3;
         }
@@ -121,6 +135,11 @@ impl IntcodeComputer {
 
     fn equals(&mut self) {
         self.binary_op(|x, y| if x == y { 1 } else { 0 });
+    }
+
+    fn adjust_relative_base(&mut self) {
+        self.relative_base += self.read_from_param(1);
+        self.pc += 2;
     }
 
     fn halt(&mut self) {
@@ -139,7 +158,7 @@ impl IntcodeComputer {
     }
 
     pub fn run_until_needs_input(&mut self) {
-        while !(self.halted || (self.data[self.pc] % 100 == 3 && self.input.is_empty())) {
+        while !(self.halted || (self.get_mem(self.pc) % 100 == 3 && self.input.is_empty())) {
             self.step();
         }
     }
@@ -152,13 +171,13 @@ mod tests {
     #[test]
     fn add() {
         let computer = IntcodeComputer::run_program(vec![1, 0, 4, 5, 99, 0], None);
-        assert_eq!(computer.data, vec![1, 0, 4, 5, 99, 100]);
+        assert_eq!(computer.get_mem(5), 100);
     }
 
     #[test]
     fn mult() {
         let computer = IntcodeComputer::run_program(vec![2, 2, 3, 5, 99, 0], None);
-        assert_eq!(computer.data, vec![2, 2, 3, 5, 99, 15]);
+        assert_eq!(computer.get_mem(5), 15);
     }
 
     #[test]
@@ -170,7 +189,7 @@ mod tests {
     #[test]
     fn input() {
         let computer = IntcodeComputer::run_program(vec![3, 0, 99], Some(vec![1]));
-        assert_eq!(computer.data, vec![1, 0, 99]);
+        assert_eq!(computer.get_mem(0), 1);
     }
 
     #[test]
@@ -182,7 +201,7 @@ mod tests {
     #[test]
     fn immediate_mode() {
         let computer = IntcodeComputer::run_program(vec![1101, 46, 1, 7, 104, 55, 99, 0], None);
-        assert_eq!(computer.data, vec![1101, 46, 1, 7, 104, 55, 99, 47]);
+        assert_eq!(computer.get_mem(7), 47);
         assert_eq!(computer.output, vec![55]);
     }
 
@@ -230,5 +249,34 @@ mod tests {
         assert_eq!(computer.output, vec![0]);
         let computer = IntcodeComputer::run_program(program, Some(vec![1]));
         assert_eq!(computer.output, vec![1]);
+    }
+
+    #[test]
+    fn relative_parameters() {
+        let program = vec![204, 1, 99];
+        let computer = IntcodeComputer::run_program(program, None);
+        assert_eq!(computer.output, vec![1]);
+        let program = vec![109, 1, 204, 1, 99];
+        let computer = IntcodeComputer::run_program(program, None);
+        assert_eq!(computer.output, vec![204]);
+    }
+
+    #[test]
+    fn quine() {
+        let program = vec![
+            109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99,
+        ];
+        let computer = IntcodeComputer::run_program(program.clone(), None);
+        assert_eq!(computer.output, program);
+    }
+
+    #[test]
+    fn large_numbers() {
+        let program = vec![1102, 34915192, 34915192, 7, 4, 7, 99, 0];
+        let computer = IntcodeComputer::run_program(program, None);
+        assert_eq!(computer.output, vec![1219070632396864]);
+        let program = vec![104, 1125899906842624, 99];
+        let computer = IntcodeComputer::run_program(program, None);
+        assert_eq!(computer.output, vec![1125899906842624]);
     }
 }

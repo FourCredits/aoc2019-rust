@@ -1,0 +1,8 @@
+[package]
+name = "d09"
+version = "0.1.0"
+edition = "2021"
+authors = ["Erik Grundy <erik.grundy@gmail.com>"]
+
+[dependencies]
+intcode = { path = "../intcode" }
