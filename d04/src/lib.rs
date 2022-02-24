@@ -1,13 +1,13 @@
-pub fn part_a(input: &str) -> u64 {
+pub fn part_a(input: &str) -> usize {
     let (lo, hi) = input.split_once('-').unwrap();
     let (lo, hi) = (lo.parse::<u64>().unwrap(), hi.parse::<u64>().unwrap());
-    (lo..=hi).filter(matches_criteria1).fold(0, |a, _| a + 1)
+    (lo..=hi).filter(matches_criteria1).count()
 }
 
-pub fn part_b(input: &str) -> u64 {
+pub fn part_b(input: &str) -> usize {
     let (lo, hi) = input.split_once('-').unwrap();
     let (lo, hi) = (lo.parse::<u64>().unwrap(), hi.parse::<u64>().unwrap());
-    (lo..=hi).filter(matches_criteria2).fold(0, |a, _| a + 1)
+    (lo..=hi).filter(matches_criteria2).count()
 }
 
 fn matches_criteria1(n: &u64) -> bool {
