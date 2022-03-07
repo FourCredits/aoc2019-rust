@@ -1,10 +1,27 @@
 use intcode::IntcodeComputer;
-use itertools::Itertools;
+
+fn permutations<T: Clone>(vals: &[T]) -> Vec<Vec<T>> {
+    if vals.is_empty() {
+        return vec![vec![]];
+    }
+    let mut copy = vals.to_owned();
+    let mut result = Vec::new();
+    for _ in 0..copy.len() {
+        if let Some((first, rest)) = copy.split_first() {
+            for mut rest_perm in permutations(rest) {
+                rest_perm.push(first.clone());
+                result.push(rest_perm);
+            }
+        }
+        copy.rotate_left(1);
+    }
+    result
+}
 
 pub fn part_a(input: &str) -> i64 {
     let amplifier_controller_software = IntcodeComputer::parse_program(input);
-    (0..=4)
-        .permutations(5)
+    permutations(&[0, 1, 2, 3, 4])
+        .into_iter()
         .map(|inputs| {
             let mut intermediate_value = 0;
             for phase_setting in inputs {
@@ -23,8 +40,8 @@ pub fn part_a(input: &str) -> i64 {
 
 pub fn part_b(input: &str) -> i64 {
     let software = IntcodeComputer::parse_program(input);
-    (5..=9)
-        .permutations(5)
+    permutations(&[5, 6, 7, 8, 9])
+        .into_iter()
         .map(|permutation| {
             let mut intermediate_value = 0;
             let mut computers: Vec<_> = permutation
@@ -81,5 +98,21 @@ mod tests {
         let input = include_str!("input.txt");
         assert_eq!(part_a(input), 47064);
         assert_eq!(part_b(input), 4248984);
+    }
+
+    #[test]
+    fn permutations_test() {
+        assert_eq!(permutations(&[0; 0]), vec![vec![]]);
+        assert_eq!(permutations(&[1]), vec![vec![1]]);
+        assert_eq!(permutations(&[1, 2]), vec![vec![2, 1], vec![1, 2]]);
+        let expected = vec![
+            vec![3, 2, 1],
+            vec![2, 3, 1],
+            vec![1, 3, 2],
+            vec![3, 1, 2],
+            vec![2, 1, 3],
+            vec![1, 2, 3],
+        ];
+        assert_eq!(permutations(&[1, 2, 3]), expected);
     }
 }
