@@ -8,7 +8,7 @@ pub fn part_a(input: &str) -> i64 {
     moons.iter().map(Moon::total_energy).sum()
 }
 
-pub fn part_b(input: &str) -> usize {
+pub fn part_b(input: &str) -> i64 {
     let mut moons: Vec<_> = input.lines().map(parse_line).collect();
     let axes: Vec<_> = (0..=2).map(|n| get_axis(&moons, n)).collect();
     let mut repetitions = [None; 3];

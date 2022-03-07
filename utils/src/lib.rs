@@ -26,12 +26,14 @@ impl Sub for V3 {
     }
 }
 
-pub fn gcd<T>(a: T, b: T) -> T
-where
-    T: Rem + Rem<Output = T> + PartialEq + PartialOrd + Sub + Sub<Output = T> + Copy,
-{
-    let mut a = a;
-    let mut b = b;
+pub fn gcd(a: i64, b: i64) -> i64 {
+    let mut a = a.abs();
+    let mut b = b.abs();
+    if a == 0 {
+        return b;
+    } else if b == 0 {
+        return a;
+    }
     while a != b {
         if a > b {
             a = a - b;
@@ -42,20 +44,7 @@ where
     a
 }
 
-pub fn lcm<T>(a: T, b: T) -> T
-where
-    T: Rem
-        + Rem<Output = T>
-        + PartialEq
-        + PartialOrd
-        + Sub
-        + Sub<Output = T>
-        + Div
-        + Div<Output = T>
-        + Mul
-        + Mul<Output = T>
-        + Copy,
-{
+pub fn lcm(a: i64, b: i64) -> i64 {
     (a * b) / gcd(a, b)
 }
 
@@ -68,6 +57,10 @@ mod tests {
         assert_eq!(gcd(2, 4), 2);
         assert_eq!(gcd(1, 5), 1);
         assert_eq!(gcd(2, 5), 1);
+        assert_eq!(gcd(2, 0), 2);
+        assert_eq!(gcd(0, 2), 2);
+        assert_eq!(gcd(-2, 0), 2);
+        assert_eq!(gcd(0, -2), 2);
     }
 
     #[test]
@@ -75,5 +68,7 @@ mod tests {
         assert_eq!(lcm(2, 3), 6);
         assert_eq!(lcm(2, 1), 2);
         assert_eq!(lcm(2, 8), 8);
+        assert_eq!(gcd(2, 0), 0);
+        assert_eq!(gcd(0, 2), 0);
     }
 }
