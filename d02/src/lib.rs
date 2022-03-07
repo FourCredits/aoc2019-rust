@@ -7,7 +7,7 @@ pub fn part_a(input: &str) -> i64 {
         program[2] = 2;
         program
     };
-    IntcodeComputer::run_program(program, None).data[0]
+    IntcodeComputer::run_program(program, None).data[&0]
 }
 
 pub fn part_b(input: &str) -> Option<i64> {
@@ -17,7 +17,7 @@ pub fn part_b(input: &str) -> Option<i64> {
         for verb in 0..=99 {
             start_program[2] = verb;
             let computer = IntcodeComputer::run_program(start_program.clone(), None);
-            if computer.data[0] == 19690720 {
+            if computer.data[&0] == 19690720 {
                 return Some(100 * noun + verb);
             }
         }
