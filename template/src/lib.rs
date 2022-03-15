@@ -1,11 +1,14 @@
-pub fn part_a(input: &str) -> i64 {
-    0
+pub fn part_a(_input: &str) -> i64 {
+    todo!();
 }
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     #[test]
-    fn test() {
-        assert_eq!(super::part_a(""), 1);
+    fn real() {
+        let input = include_str!("input.txt");
+        assert_eq!(part_a(input), 1);
     }
 }
