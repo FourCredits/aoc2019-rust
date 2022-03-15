@@ -90,6 +90,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "d16"
+version = "0.1.0"
+
+[[package]]
 name = "intcode"
 version = "0.1.0"
 
