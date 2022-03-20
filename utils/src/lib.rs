@@ -36,9 +36,9 @@ pub fn gcd(a: i64, b: i64) -> i64 {
     }
     while a != b {
         if a > b {
-            a = a - b;
+            a -= b;
         } else {
-            b = b - a;
+            b -= a;
         }
     }
     a
@@ -68,7 +68,7 @@ mod tests {
         assert_eq!(lcm(2, 3), 6);
         assert_eq!(lcm(2, 1), 2);
         assert_eq!(lcm(2, 8), 8);
-        assert_eq!(gcd(2, 0), 0);
-        assert_eq!(gcd(0, 2), 0);
+        assert_eq!(lcm(2, 0), 0);
+        assert_eq!(lcm(0, 2), 0);
     }
 }
