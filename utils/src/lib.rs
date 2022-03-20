@@ -26,6 +26,16 @@ impl Sub for V3 {
     }
 }
 
+#[derive(Copy, Clone, Eq, PartialEq, Hash)]
+pub struct V2(pub i64, pub i64);
+
+impl V2 {
+    pub fn taxicab_directions(self) -> [V2; 4] {
+        let V2(x, y) = self;
+        [V2(x + 1, y), V2(x - 1, y), V2(x, y - 1), V2(x, y + 1)]
+    }
+}
+
 pub fn gcd(a: i64, b: i64) -> i64 {
     let mut a = a.abs();
     let mut b = b.abs();
