@@ -36,7 +36,7 @@ fn find_bounds(reactions: &Reactions, target: i64) -> (i64, i64) {
 fn ore_needed(reactions: &Reactions, amount: i64) -> i64 {
     let mut needed: HashMap<&str, i64> = HashMap::from([("FUEL", amount)]);
     let mut leftovers = HashMap::new();
-    while let Some((&c, &a)) = needed.iter().filter(|&(&c, _a)| c != "ORE").next() {
+    while let Some((&c, &a)) = needed.iter().find(|&(&c, _a)| c != "ORE") {
         needed.remove(c);
         for (c, a) in chemicals_needed(reactions, c, a, &mut leftovers) {
             *needed.entry(c).or_insert(0) += a;
