@@ -69,7 +69,12 @@ pub fn part_b(input: &str) -> i64 {
 }
 
 fn destroyed_order(station: V2, mut others: Vec<V2>) -> Vec<V2> {
-    others.sort_by(|&a1, &a2| (a1 - station).magnitude().partial_cmp(&(a2 - station).magnitude()).unwrap());
+    others.sort_by(|&a1, &a2| {
+        (a1 - station)
+            .magnitude()
+            .partial_cmp(&(a2 - station).magnitude())
+            .unwrap()
+    });
     let mut groups = BTreeMap::new();
     for &asteroid in others.iter() {
         groups
@@ -207,7 +212,7 @@ mod tests {
             .into_iter()
             .filter(|&asteroid| asteroid != station)
             .collect();
-        let t= destroyed_order(station, others);
+        let t = destroyed_order(station, others);
         assert_eq!(
             t.into_iter().take(9).collect::<Vec<_>>(),
             vec![
@@ -258,9 +263,9 @@ mod tests {
 
     #[test]
     fn round_robin_test() {
-        let mut input = vec![vec![1, 2], vec![3, 4]];
-        assert_eq!(round_robin(&mut input), vec![1, 3, 2, 4]);
-        let mut input = vec![vec![1, 2], vec![3, 4, 5]];
-        assert_eq!(round_robin(&mut input), vec![1, 3, 2, 4, 5]);
+        let input = vec![vec![1, 2], vec![3, 4]];
+        assert_eq!(round_robin(&input), vec![1, 3, 2, 4]);
+        let input = vec![vec![1, 2], vec![3, 4, 5]];
+        assert_eq!(round_robin(&input), vec![1, 3, 2, 4, 5]);
     }
 }
