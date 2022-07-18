@@ -1,4 +1,4 @@
-use utils::V3;
+use utils::v3::V3;
 
 pub fn part_a(input: &str) -> i64 {
     let mut moons: Vec<_> = input.lines().map(parse_line).collect();

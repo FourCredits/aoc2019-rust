@@ -76,7 +76,7 @@ fn parse(input: &str) -> Reactions {
 }
 
 fn parse_element(s: &str) -> (&str, i64) {
-    let (amount, chemical) = s.split_once(" ").unwrap();
+    let (amount, chemical) = s.split_once(' ').unwrap();
     (chemical, amount.parse().unwrap())
 }
 

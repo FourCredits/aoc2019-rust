@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use intcode::IntcodeComputer;
-use utils::V2;
+use utils::v2::V2;
 
 type Position = V2;
 type Direction = V2;
