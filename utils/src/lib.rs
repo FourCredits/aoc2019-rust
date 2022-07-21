@@ -20,6 +20,14 @@ pub fn gcd(a: i64, b: i64) -> i64 {
     a
 }
 
+pub fn parse_grid(input: &str) -> impl Iterator<Item = (v2::V2, char)> + '_ {
+    input.trim().lines().enumerate().flat_map(|(y, line)| {
+        line.chars()
+            .enumerate()
+            .map(move |(x, c)| (v2::V2(y as i64, x as i64), c))
+    })
+}
+
 pub fn lcm(a: i64, b: i64) -> i64 {
     (a * b) / gcd(a, b)
 }
