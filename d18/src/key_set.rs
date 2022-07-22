@@ -17,12 +17,11 @@ impl KeySet {
     }
 
     fn index(c: char) -> u32 {
-        if c == '@' {
-            0
-        } else if c.is_ascii_lowercase() {
-            c as u32 - 'a' as u32 + 1
-        } else {
-            unreachable!()
+        match c {
+            '@' => 0,
+            '1'..='4' => c as u32 - '1' as u32 + 27,
+            c if c.is_ascii_lowercase() => c as u32 - 'a' as u32 + 1,
+            _ => unreachable!(),
         }
     }
 
@@ -59,7 +58,10 @@ impl BitOrAssign<char> for KeySet {
 
 impl Debug for KeySet {
     fn fmt(&self, fmt: &mut Formatter<'_>) -> fmt::Result {
-        let keys: Vec<char> = std::iter::once('@').chain('a'..='z').collect();
+        let keys: Vec<char> = std::iter::once('@')
+            .chain('a'..='z')
+            .chain('1'..='4')
+            .collect();
         fmt.debug_set()
             .entries(keys.iter().filter(|&&c| self.contains(c)))
             .finish()
