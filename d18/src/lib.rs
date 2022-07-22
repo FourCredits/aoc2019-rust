@@ -1,12 +1,5 @@
 /*
 TODO: this is what i've got so far:
-- most of the tests work, except for example_4 and example_5
-    - as far as i can see, the parsing of the graph is correct
-    - so something in the actual graph traversal is incorrect?
-- i'd like to make some of the functions a little less right leaning, do some
-  good ol' fashioned extracting
-- running tests::real doesn't seem to complete in a reasonable amount of time.
-  some optimisation required, once everything else is correct...
 - I've also not really done a full project test to see if any refactorings have
   broken anything, so I should probably do that
 - I've written a new function in utils called parse_grid, for the typical
@@ -17,11 +10,11 @@ TODO: this is what i've got so far:
 mod key_set;
 
 use std::{
-    collections::{BTreeSet, HashMap, HashSet, VecDeque},
+    collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque},
     fmt::Debug,
 };
 
-use utils::{parse_grid, v2::V2};
+use utils::{self, v2::V2};
 
 use key_set::KeySet;
 
@@ -47,11 +40,11 @@ fn parse(input: &str) -> Graph {
 // That said, we do still need the maze in the first place. This produces the
 // maze, a map of all the positions of the keys, and a set of all the keys
 // contained in the maze
-fn parse_maze(input: &str) -> (HashMap<V2, Tile>, HashMap<char, V2>, KeySet) {
+fn parse_maze(input: &str) -> (HashMap<V2, Tile>, BTreeMap<char, V2>, KeySet) {
     let mut maze = HashMap::new();
-    let mut keys = HashMap::new();
+    let mut keys = BTreeMap::new();
     let mut nodes = KeySet::new();
-    for (pos, c) in parse_grid(input) {
+    for (pos, c) in utils::parse_grid(input) {
         let tile = parse_char(c);
         if let Tile::Key(c) = tile {
             keys.insert(c, pos);
@@ -77,7 +70,7 @@ fn parse_char(c: char) -> Tile {
 // the (s, d) pair also has a (d, s) pair with the same value
 fn find_edges(
     maze: HashMap<V2, Tile>,
-    keys: HashMap<char, V2>,
+    keys: BTreeMap<char, V2>,
 ) -> HashMap<(char, char), (usize, KeySet)> {
     let mut edges = HashMap::new();
     for (source, pos) in keys {
@@ -132,8 +125,6 @@ impl Graph {
             edges: HashMap::new(),
         };
         for ((node1, node2), (distance, doors)) in undirected_edges {
-            assert!(nodes.contains(node1));
-            assert!(nodes.contains(node2));
             graph.add_edge(node1, node2, distance, doors);
             graph.add_edge(node2, node1, distance, doors);
         }
@@ -159,11 +150,9 @@ impl Graph {
         distance_travelled: usize,
         visited: &mut HashMap<(char, KeySet), usize>,
     ) -> Option<usize> {
-        // TODO: remove
-        // println!("calling with start {start} and keys {keys:?}");
         if let Some(&previous_call) = visited.get(&(start, keys)) {
             if previous_call < distance_travelled {
-                // If we're trying to explore from the smae place, with the same
+                // If we're trying to explore from the same place, with the same
                 // keys, and there's already a better solution, then we don't
                 // need to try this: we know there's a better option
                 return None;
@@ -409,6 +398,7 @@ mod tests {
 
     #[test]
     fn real() {
-        assert_eq!(part_a(include_str!("input.txt")), 1);
+        let input = include_str!("input.txt");
+        assert_eq!(part_a(input), 4544);
     }
 }

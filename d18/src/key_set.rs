@@ -31,7 +31,7 @@ impl KeySet {
     }
 
     pub fn is_subset(&self, other: &KeySet) -> bool {
-        other.internal > self.internal
+        (self.internal | other.internal) == other.internal
     }
 }
 
