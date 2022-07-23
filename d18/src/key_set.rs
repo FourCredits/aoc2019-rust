@@ -1,6 +1,6 @@
 use std::{
     fmt::{self, Debug, Formatter},
-    ops::{BitOr, BitOrAssign},
+    ops::{BitAnd, BitOr, BitOrAssign},
 };
 
 // KeySet is just a wrapper around a bit set. It gives convenient functions, so
@@ -56,6 +56,16 @@ impl BitOr for KeySet {
     fn bitor(self, rhs: Self) -> Self::Output {
         KeySet {
             internal: self.internal | rhs.internal,
+        }
+    }
+}
+
+impl BitAnd for KeySet {
+    type Output = Self;
+
+    fn bitand(self, rhs: Self) -> Self::Output {
+        KeySet {
+            internal: self.internal & rhs.internal,
         }
     }
 }

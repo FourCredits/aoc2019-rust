@@ -257,6 +257,7 @@ impl Graph {
             None,
             KeySet::from_iter('1'..='4'),
             &mut HashMap::new(),
+            &mut HashMap::new(),
         )
         .unwrap()
     }
@@ -315,18 +316,20 @@ impl Graph {
         distance_travelled: usize,
         last_door_opened: Option<char>,
         keys: KeySet,
+        // TODO: better names
         visited: &mut HashMap<(char, KeySet), Vec<(usize, Bot, usize)>>,
+        visited2: &mut HashMap<([char; 4], KeySet), usize>,
     ) -> Option<usize> {
-        if bots
-            .iter()
-            .map(|bot| bot.position)
-            .all(|pos| visited.contains_key(&(pos, keys)))
-        {
-            return None;
+        let position = bots.map(|bot| bot.position);
+        if let Some(&previous_call) = visited2.get(&(position, keys)) {
+            if previous_call < distance_travelled {
+                return None;
+            }
         }
         if keys == self.nodes {
             return Some(distance_travelled);
         }
+        visited2.insert((position, keys), distance_travelled);
         for bot in bots {
             let k = (bot.position, keys);
             if matches!(last_door_opened, Some(door) if bot.doors_in_area.contains(door))
@@ -351,13 +354,14 @@ impl Graph {
                     Some(new_position),
                     keys | new_position,
                     visited,
+                    visited2,
                 )
             })
             .min_by(usize::cmp)
     }
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
 struct Bot {
     id: usize,
     keys_in_area: KeySet,
