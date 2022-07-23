@@ -50,8 +50,24 @@ impl BitOr<char> for KeySet {
     }
 }
 
+impl BitOr for KeySet {
+    type Output = Self;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        KeySet {
+            internal: self.internal | rhs.internal,
+        }
+    }
+}
+
 impl BitOrAssign<char> for KeySet {
     fn bitor_assign(&mut self, rhs: char) {
+        *self = *self | rhs;
+    }
+}
+
+impl BitOrAssign for KeySet {
+    fn bitor_assign(&mut self, rhs: Self) {
         *self = *self | rhs;
     }
 }
