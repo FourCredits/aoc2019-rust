@@ -86,7 +86,7 @@ fn parse_maze(input: &str) -> (HashMap<V2, Tile>, BTreeMap<char, V2>, KeySet) {
             '#' => Tile::Wall,
             '@' => {
                 start_count += 1;
-                Tile::Key((start_count + ('0' as u8)) as char)
+                Tile::Key((start_count + b'0') as char)
             }
             c if c.is_ascii_lowercase() => Tile::Key(c),
             c if c.is_ascii_uppercase() => Tile::Door(c.to_ascii_lowercase()),
@@ -262,54 +262,6 @@ impl Graph {
         .unwrap()
     }
 
-    #[allow(dead_code)]
-    fn shortest_path_multiple_bots(
-        &self,
-        bots: [char; 4],
-        distance_travelled: usize,
-        keys: KeySet,
-        visited: &mut HashMap<([char; 4], KeySet), usize>,
-    ) -> Option<usize> {
-        // println!(
-        //     "bots: {:?}, dones: {:?}, keys: {:?}",
-        //     bots,
-        //     self.bots
-        //         .iter()
-        //         .map(|b| b.done(&keys))
-        //         .collect::<Vec<bool>>(),
-        //     keys,
-        // );
-        if let Some(&previous_call) = visited.get(&(bots, keys)) {
-            if previous_call < distance_travelled {
-                return None;
-            }
-        }
-        if keys == self.nodes {
-            return Some(distance_travelled);
-        }
-        visited.insert((bots, keys), distance_travelled);
-        bots.into_iter()
-            .enumerate()
-            .filter(|(i, _)| !self.bots[*i].done(keys))
-            .flat_map(|(i, bot)| {
-                self.edges[&bot]
-                    .iter()
-                    .filter(|(_, _, doors)| doors.is_subset(&keys))
-                    .map(move |&(neighbour, distance, _)| (i, neighbour, distance))
-            })
-            .filter_map(|(i, neighbour, distance)| {
-                let mut new_bots = bots;
-                new_bots[i] = neighbour;
-                self.shortest_path_multiple_bots(
-                    new_bots,
-                    distance_travelled + distance,
-                    keys | neighbour,
-                    visited,
-                )
-            })
-            .min_by(usize::cmp)
-    }
-
     fn temp(
         &self,
         bots: [Bot; 4],
@@ -346,7 +298,7 @@ impl Graph {
             .flatten()
             .filter_map(|(i, new_bot, distance)| {
                 let new_position = new_bot.position;
-                let mut new_bots = bots.clone();
+                let mut new_bots = bots;
                 new_bots[i - 1] = new_bot;
                 self.temp(
                     new_bots,
@@ -358,6 +310,62 @@ impl Graph {
                 )
             })
             .min_by(usize::cmp)
+    }
+
+    #[allow(dead_code)]
+    fn temp2(&self, starting_positions: [char; 4], starting_keys: KeySet) -> Option<usize> {
+        let mut next_options = VecDeque::from([(starting_positions, 0, starting_keys)]);
+        // TODO: naming
+        let mut visited = HashMap::new();
+        let mut visited_nodes = HashMap::new();
+        while let Some((position, distance, keys)) = next_options.pop_front() {
+            if let Some(&previous_visit) = visited.get(&(position, keys)) {
+                if previous_visit < distance {
+                    continue;
+                }
+            }
+            if keys == self.nodes {
+                return Some(distance);
+            }
+            visited.insert((position, keys), distance);
+            for (i, bot) in position.into_iter().enumerate() {
+                // todo: insert node-key caching
+                let to_add = visited_nodes.entry((bot, keys)).or_insert_with(|| {
+                    self.edges[&bot]
+                        .iter()
+                        .filter_map(|(neighbour, edge_distance, keys_needed)| {
+                            if keys_needed.is_subset(&keys) {
+                                let mut new_position = position;
+                                new_position[i] = *neighbour;
+                                Some((new_position, distance + edge_distance, keys | *neighbour))
+                            } else {
+                                None
+                            }
+                        })
+                        .collect::<BTreeSet<_>>()
+                });
+                next_options.extend(to_add.iter());
+                // for (neighbour, edge_distance, keys_needed) in &self.edges[bot] {
+                //     if keys_needed.is_subset(&keys) {
+                //         let mut new_position = position;
+                //         new_position[i] = *neighbour;
+                //         next_options.push_back((
+                //             new_position,
+                //             distance + edge_distance,
+                //             keys | *neighbour,
+                //         ));
+                //     }
+                // }
+            }
+        }
+        None
+    }
+
+    pub fn temp3(&self) -> usize {
+        let starting_position =
+            [self.bots[0], self.bots[1], self.bots[2], self.bots[3]].map(|bot| bot.position);
+        let starting_keys = KeySet::from_iter('1'..='4');
+        self.temp2(starting_position, starting_keys).unwrap()
     }
 }
 
@@ -437,23 +445,23 @@ mod tests {
     mod part_1_tests {
         use super::*;
 
-        const STR_1: &'static str = "#########
+        const STR_1: &str = "#########
 #b.A.@.a#
 #########";
 
-        const STR_2: &'static str = "########################
+        const STR_2: &str = "########################
 #f.D.E.e.C.b.A.@.a.B.c.#
 ######################.#
 #d.....................#
 ########################";
 
-        const STR_3: &'static str = "########################
+        const STR_3: &str = "########################
 #...............b.C.D.f#
 #.######################
 #.....@.a.B.c.d.A.e.F.g#
 ########################";
 
-        const STR_4: &'static str = "#################
+        const STR_4: &str = "#################
 #i.G..c...e..H.p#
 ########.########
 #j.A..b...f..D.o#
@@ -463,7 +471,7 @@ mod tests {
 #l.F..d...h..C.m#
 #################";
 
-        const STR_5: &'static str = "########################
+        const STR_5: &str = "########################
 #@..............ac.GI.b#
 ###d#e#f################
 ###A#B#C################
