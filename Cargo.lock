@@ -109,6 +109,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "d19"
+version = "0.1.0"
+dependencies = [
+ "intcode",
+ "utils",
+]
+
+[[package]]
 name = "intcode"
 version = "0.1.0"
 
