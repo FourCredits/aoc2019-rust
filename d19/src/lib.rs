@@ -22,6 +22,8 @@
  *   not, we expand another layer and keep searching.
  * - Also worth reminding, in case you forget, that the way to do a priority queue in Rust is use a
  *   BinaryHeap with elements that have a custom Ord implementation.
+ * - Last thing: to find the distance between a point and line, use this formula:
+ *   <https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line>
  */
 
 mod rectangle;
