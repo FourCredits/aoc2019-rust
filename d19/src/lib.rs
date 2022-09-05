@@ -1,4 +1,5 @@
-/* TODO: I don't have the patience to do this, but here are my ideas at the moment
+/* TODO: I don't have the patience to do this at the moment, but here are my ideas.
+ *
  * - I'm almost sure the theory of my method is sound, but it's frightfully inefficient. As such,
  *   What I'm thinking needs to happen is coming up with a more efficient access pattern. `test`
  *   has some of my ideas on this.
@@ -30,7 +31,7 @@ mod rectangle;
 
 use std::{
     cell::RefCell,
-    collections::{HashMap, VecDeque},
+    collections::{BinaryHeap, HashMap, VecDeque},
     iter,
 };
 
@@ -53,43 +54,85 @@ pub fn part_b(input: &str) -> i64 {
         .unwrap()
 }
 
-fn test(input: &str) -> i64 {
-    let reading_generator = TractorBeamReadings::new(input);
-    let mut positions = (0..).zip(0..).map(|(y, x)| V2(y, x));
-    let mut queue = VecDeque::new();
-    'outer: while let Some(position) = queue.pop_front().or_else(|| positions.next()) {
-        if reading_generator.take_reading(position) == 1 {
-            // search for the square
-            let mut solution_found = true;
-            for pos in Rectangle::new(position, position + V2(100, 100)).iter_nearest() {
-                if reading_generator.take_reading(pos) == 1 {
-                    queue.push_back(pos);
-                } else {
-                    solution_found = false;
-                }
+fn distance_from_line(V2(y0, x0): V2) -> f32 {
+    let V2(y1, x1) = V2(0, 0);
+    let V2(y2, x2) = V2(1, 1);
+    let (x0, x1, x2) = (x0 as f32, x1 as f32, x2 as f32);
+    let (y0, y1, y2) = (y0 as f32, y1 as f32, y2 as f32);
+    let num = ((x2 - x1) * (y1 - y0)) - ((x1 - x0) * (y2 - y1));
+    let denom = ((x2 - x1).powi(2) + (y2 - y1).powi(2)).sqrt();
+    (num / denom).abs()
+}
+
+#[derive(PartialEq, Eq)]
+struct Pos(V2);
+
+impl Ord for Pos {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        let Pos(s) = *self;
+        let Pos(o) = *other;
+        distance_from_line(s)
+            .partial_cmp(&distance_from_line(o))
+            .unwrap()
+    }
+}
+
+impl PartialOrd for Pos {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+pub fn test(input: &str) -> i64 {
+    let reader = TractorBeamReadings::new(input);
+    let mut in_beam = VecDeque::from([V2(0, 0)]);
+    let mut not_in_beam = BinaryHeap::new();
+    let square = |i| {
+        iter::once(V2(i, i))
+            .chain((0..i).map(move |j| V2(i, j)))
+            .chain((0..i).map(move |j| V2(j, i)))
+    };
+    loop {
+        if let Some(pos) = in_beam.pop_front() {
+            #[allow(clippy::unnecessary_fold)]
+            let answer_found = (1..100).all(|i| {
+                square(i)
+                    // I deliberately *don't* want the short-circuiting of `all`: I want the side
+                    // effects of this call.
+                    .map(|offset| {
+                        let result = reader.take_reading(pos + offset) == 1;
+                        if result {
+                            not_in_beam.push(Pos(pos));
+                        } else {
+                            in_beam.push_back(pos);
+                        }
+                        result
+                    })
+                    .fold(true, |acc, is_in_beam| acc && is_in_beam)
+            });
+            if answer_found {
+                return pos.1 * 10_000 + pos.0;
             }
-            if solution_found {
-                return position.1 * 10_000 + position.0;
-            }
-        } else {
-            let V2(y, x) = position;
-            // search upwards
-            for i in (0..y).rev() {
-                if reading_generator.take_reading(V2(i, x)) == 1 {
-                    queue.push_back(V2(i, x));
-                    continue 'outer;
-                }
-            }
-            // search leftwards
-            for i in (0..x).rev() {
-                if reading_generator.take_reading(V2(y, i)) == 1 {
-                    queue.push_back(V2(y, i));
-                    continue 'outer;
-                }
-            }
+        } else if let Some(Pos(pos)) = not_in_beam.pop() {
+            #[allow(clippy::unnecessary_fold)]
+            (1..).try_for_each(|i| {
+                square(i)
+                    // I deliberately *don't* want the short-circuiting of `all`: I want the side
+                    // effects of this call.
+                    .map(|offset| {
+                        let result = reader.take_reading(pos + offset) == 1;
+                        if result {
+                            not_in_beam.push(Pos(pos));
+                        } else {
+                            in_beam.push_back(pos);
+                        }
+                        result
+                    })
+                    .fold(true, |acc, is_in_beam| acc && !is_in_beam)
+                    .then_some(())
+            });
         }
     }
-    unreachable!();
 }
 
 // This is a version of Rectangle::iter_nearest, but you with no upper bound
@@ -158,6 +201,14 @@ mod tests {
     }
 
     #[test]
+    fn distance_from_line_test() {
+        assert_eq!(distance_from_line(V2(0, 0)), 0.0);
+        assert_eq!(distance_from_line(V2(5, 5)), 0.0);
+        assert_eq!(distance_from_line(V2(0, 1)), 2.0_f32.sqrt() / 2.0);
+        assert!(distance_from_line(V2(4, 1)) - 18.0_f32.sqrt() / 2.0 < 0.000001);
+    }
+
+    #[test]
     fn part_a_test() {
         let input = include_str!("input.txt");
         assert_eq!(part_a(input), 164);
@@ -166,6 +217,6 @@ mod tests {
     #[test]
     fn part_b_test() {
         let input = include_str!("input.txt");
-        assert_eq!(part_b(input), 1);
+        assert_eq!(test(input), 1);
     }
 }
