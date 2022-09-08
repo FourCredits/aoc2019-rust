@@ -39,7 +39,7 @@ fn parse(input: &str) -> Vec<i64> {
     input
         .trim()
         .chars()
-        .map(|c| c.to_digit(10).unwrap() as i64)
+        .map(|c| i64::from(c.to_digit(10).unwrap()))
         .collect()
 }
 

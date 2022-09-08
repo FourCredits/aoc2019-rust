@@ -27,7 +27,8 @@ pub fn part_b(input: &str) -> usize {
         .unwrap()
 }
 
-fn manhattan_distance((y1, x1): (i64, i64), (y2, x2): (i64, i64)) -> u64 {
+// TODO: these probably should be a method on V2s
+const fn manhattan_distance((y1, x1): (i64, i64), (y2, x2): (i64, i64)) -> u64 {
     (i64::abs(y2 - y1) + i64::abs(x2 - x1)) as u64
 }
 

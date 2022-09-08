@@ -83,7 +83,7 @@ pub fn find_path(map: &Map) -> Vec<Instruction> {
     }
 }
 
-fn is_scaffold(space: i64) -> bool {
+const fn is_scaffold(space: i64) -> bool {
     space != 87 && space != 46
 }
 

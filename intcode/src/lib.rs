@@ -19,24 +19,20 @@ impl IntcodeComputer {
             .collect()
     }
 
-    pub fn new(data: Vec<i64>, input: Option<Vec<i64>>) -> IntcodeComputer {
-        IntcodeComputer {
+    pub fn new(data: Vec<i64>, input: Option<Vec<i64>>) -> Self {
+        Self {
             pc: 0,
             relative_base: 0,
             halted: false,
             data: data.into_iter().enumerate().collect(),
             // Allows us to pop from the vector more easily
-            input: if let Some(i) = input {
-                i.into_iter().rev().collect()
-            } else {
-                Vec::new()
-            },
+            input: input.map_or_else(Vec::new, |input| input.into_iter().rev().collect()),
             output: Vec::new(),
         }
     }
 
-    pub fn run_program(program: Vec<i64>, input: Option<Vec<i64>>) -> IntcodeComputer {
-        let mut computer = IntcodeComputer::new(program, input);
+    pub fn run_program(program: Vec<i64>, input: Option<Vec<i64>>) -> Self {
+        let mut computer = Self::new(program, input);
         computer.run();
         computer
     }
@@ -114,10 +110,10 @@ impl IntcodeComputer {
     }
 
     fn jump_if_true(&mut self) {
-        if self.read_from_param(1) != 0 {
-            self.pc = self.read_from_param(2) as usize;
-        } else {
+        if self.read_from_param(1) == 0 {
             self.pc += 3;
+        } else {
+            self.pc = self.read_from_param(2) as usize;
         }
     }
 

@@ -6,12 +6,17 @@ pub struct V2(pub i64, pub i64);
 
 impl V2 {
     // TODO: rename to taxicab_neighbours
-    pub fn taxicab_directions(self) -> [V2; 4] {
-        let V2(x, y) = self;
-        [V2(x + 1, y), V2(x - 1, y), V2(x, y - 1), V2(x, y + 1)]
+    pub const fn taxicab_directions(self) -> [Self; 4] {
+        let Self(x, y) = self;
+        [
+            Self(x + 1, y),
+            Self(x - 1, y),
+            Self(x, y - 1),
+            Self(x, y + 1),
+        ]
     }
 
-    pub fn taxicab_distance(self, other: V2) -> i64 {
+    pub fn taxicab_distance(self, other: Self) -> i64 {
         let diff = self - other;
         diff.0.abs() + diff.1.abs()
     }

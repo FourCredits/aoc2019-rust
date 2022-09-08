@@ -14,19 +14,14 @@ pub fn part_b(input: &str) -> i64 {
         .sum()
 }
 
-fn fuel(n: i64) -> i64 {
+const fn fuel(n: i64) -> i64 {
     (n / 3) - 2
 }
 
 fn fuel_recursive(n: i64) -> i64 {
-    use std::iter::successors;
-    successors(Some(n), |&n| {
+    std::iter::successors(Some(n), |&n| {
         let f = fuel(n);
-        if f > 0 {
-            Some(f)
-        } else {
-            None
-        }
+        (f > 0).then_some(f)
     })
     .skip(1)
     .sum()

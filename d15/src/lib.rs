@@ -6,19 +6,19 @@ pub fn part_a(input: &str) -> i64 {
     let program = IntcodeComputer::parse_program(input);
     let mut computer = IntcodeComputer::new(program, None);
     let map = explore(&mut computer);
-    shortest_path(map).unwrap()
+    shortest_path(&map).unwrap()
 }
 
 pub fn part_b(input: &str) -> i64 {
     let program = IntcodeComputer::parse_program(input);
     let mut computer = IntcodeComputer::new(program, None);
     let map = explore(&mut computer);
-    time_oxygen_spread(map)
+    time_oxygen_spread(&map)
 }
 
 // a breadth-first traversal of the given input space, labelling the oxygen
 // system as 0, and then adding 1 as the oxygen travels outwards
-fn time_oxygen_spread(map: HashMap<(i64, i64), i64>) -> i64 {
+fn time_oxygen_spread(map: &HashMap<(i64, i64), i64>) -> i64 {
     let oxygen_system = *map.iter().find(|&(_k, &v)| v == 2).unwrap().0;
     let mut oxygen_spread = HashMap::new();
     let mut queue = VecDeque::from([(oxygen_system, 0)]);
@@ -34,7 +34,7 @@ fn time_oxygen_spread(map: HashMap<(i64, i64), i64>) -> i64 {
 }
 
 // finds the shortest path to the oxygen system, via a breadth-first search
-fn shortest_path(map: HashMap<(i64, i64), i64>) -> Option<i64> {
+fn shortest_path(map: &HashMap<(i64, i64), i64>) -> Option<i64> {
     let start = (0, 0);
     let mut queue: VecDeque<((i64, i64), i64)> = VecDeque::from([(start, 0)]);
     let mut visited: HashSet<(i64, i64)> = HashSet::from([start]);
@@ -45,7 +45,7 @@ fn shortest_path(map: HashMap<(i64, i64), i64>) -> Option<i64> {
         visited.insert(pos);
         for new_pos in taxicab_directions(pos) {
             if !visited.contains(&new_pos) && matches!(map.get(&new_pos), Some(1 | 2)) {
-                queue.push_back((new_pos, path_length + 1))
+                queue.push_back((new_pos, path_length + 1));
             }
         }
     }
@@ -137,7 +137,7 @@ mod tests {
             ((-1, 1), 0),
             ((-2, 0), 0),
         ]);
-        assert_eq!(shortest_path(input), Some(2));
+        assert_eq!(shortest_path(&input), Some(2));
     }
 
     #[test]
@@ -165,7 +165,7 @@ mod tests {
             ((-1, 0), 0),
             ((-1, 1), 0),
         ]);
-        assert_eq!(time_oxygen_spread(input), 4);
+        assert_eq!(time_oxygen_spread(&input), 4);
     }
 
     #[test]

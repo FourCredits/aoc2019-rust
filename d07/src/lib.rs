@@ -49,11 +49,11 @@ pub fn part_b(input: &str) -> i64 {
                 .map(|&input| IntcodeComputer::new(software.clone(), Some(vec![input])))
                 .collect();
             while !computers.last().unwrap().halted {
-                computers.iter_mut().for_each(|computer| {
+                for computer in &mut computers {
                     computer.add_input(intermediate_value);
                     computer.run_until_needs_input();
                     intermediate_value = computer.output.pop().unwrap();
-                })
+                }
             }
             intermediate_value
         })

@@ -2,7 +2,7 @@ pub mod bfs;
 pub mod v2;
 pub mod v3;
 
-pub fn gcd(a: i64, b: i64) -> i64 {
+pub const fn gcd(a: i64, b: i64) -> i64 {
     let mut a = a.abs();
     let mut b = b.abs();
     if a == 0 {
@@ -28,7 +28,7 @@ pub fn parse_grid(input: &str) -> impl Iterator<Item = (v2::V2, char)> + '_ {
     })
 }
 
-pub fn lcm(a: i64, b: i64) -> i64 {
+pub const fn lcm(a: i64, b: i64) -> i64 {
     (a * b) / gcd(a, b)
 }
 

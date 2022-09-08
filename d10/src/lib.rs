@@ -1,6 +1,8 @@
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, HashSet};
-use std::ops::*;
+use std::ops::Sub;
+
+// TODO: replace with the utils V2
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 struct V2(i64, i64);
@@ -13,13 +15,13 @@ impl V2 {
     fn arg(&self) -> f64 {
         let angle = f64::atan2(self.0 as f64, -self.1 as f64);
         if angle < 0.0 {
-            angle + std::f64::consts::PI * 2.0
+            std::f64::consts::PI.mul_add(2.0, angle)
         } else {
             angle
         }
     }
 
-    fn simplify(&self) -> V2 {
+    const fn simplify(&self) -> Self {
         let gcd = utils::gcd(self.0, self.1);
         Self(self.0 / gcd, self.1 / gcd)
     }
@@ -28,19 +30,19 @@ impl V2 {
 impl Sub for V2 {
     type Output = Self;
 
-    fn sub(self, other: V2) -> V2 {
+    fn sub(self, other: Self) -> Self {
         Self(self.0 - other.0, self.1 - other.1)
     }
 }
 
 impl PartialOrd for V2 {
-    fn partial_cmp(&self, other: &V2) -> Option<Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         self.arg().partial_cmp(&other.arg())
     }
 }
 
 impl Ord for V2 {
-    fn cmp(&self, other: &V2) -> Ordering {
+    fn cmp(&self, other: &Self) -> Ordering {
         self.arg().partial_cmp(&other.arg()).unwrap()
     }
 }
@@ -76,7 +78,7 @@ fn destroyed_order(station: V2, mut others: Vec<V2>) -> Vec<V2> {
             .unwrap()
     });
     let mut groups = BTreeMap::new();
-    for &asteroid in others.iter() {
+    for &asteroid in &others {
         groups
             .entry((asteroid - station).simplify())
             .or_insert_with(Vec::new)
@@ -113,7 +115,7 @@ fn parse_asteroids(input: &str) -> Vec<V2> {
 // goes through the collections, taking one element from each at a time
 fn round_robin<T: Copy>(vals: &[Vec<T>]) -> Vec<T> {
     let mut result = Vec::new();
-    let stop = vals.iter().map(|coll| coll.len()).max().unwrap();
+    let stop = vals.iter().map(Vec::len).max().unwrap();
     let mut i = 0;
     while i < stop {
         for val in vals {

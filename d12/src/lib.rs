@@ -13,7 +13,7 @@ pub fn part_b(input: &str) -> i64 {
     let axes: Vec<_> = (0..=2).map(|n| get_axis(&moons, n)).collect();
     let mut repetitions = [None; 3];
     let mut n = 0;
-    while repetitions.iter().any(|r| r.is_none()) {
+    while repetitions.iter().any(Option::is_none) {
         n += 1;
         tick(&mut moons);
         (0..=2).for_each(|i| {
@@ -40,19 +40,19 @@ impl Moon {
         self.position += self.velocity;
     }
 
-    fn apply_gravity(&mut self, other: Moon) {
+    fn apply_gravity(&mut self, other: Self) {
         self.velocity += (other.position - self.position).signum();
     }
 
-    fn potential_energy(&self) -> i64 {
+    const fn potential_energy(&self) -> i64 {
         self.position.0.abs() + self.position.1.abs() + self.position.2.abs()
     }
 
-    fn kinetic_energy(&self) -> i64 {
+    const fn kinetic_energy(&self) -> i64 {
         self.velocity.0.abs() + self.velocity.1.abs() + self.velocity.2.abs()
     }
 
-    fn total_energy(&self) -> i64 {
+    const fn total_energy(&self) -> i64 {
         self.potential_energy() * self.kinetic_energy()
     }
 }

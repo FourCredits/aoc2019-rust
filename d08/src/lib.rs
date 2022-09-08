@@ -21,8 +21,7 @@ pub fn part_b(width: usize, height: usize, input: &str) -> String {
                 .to_owned()
                 + (if (i + 1) % width == 0 { "\n" } else { "" })
         })
-        .collect::<Vec<String>>()
-        .join("")
+        .collect::<String>()
 }
 
 #[cfg(test)]

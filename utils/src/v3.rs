@@ -4,7 +4,7 @@ use std::ops::{AddAssign, Sub};
 pub struct V3(pub i64, pub i64, pub i64);
 
 impl V3 {
-    pub fn signum(self) -> V3 {
+    pub const fn signum(self) -> Self {
         Self(self.0.signum(), self.1.signum(), self.2.signum())
     }
 }

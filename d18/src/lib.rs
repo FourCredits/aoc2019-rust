@@ -23,7 +23,7 @@ fn parse(input: &str) -> Grid {
         .collect::<Grid>()
 }
 
-fn parse_tile(c: char) -> Tile {
+const fn parse_tile(c: char) -> Tile {
     match c {
         '#' => Tile::Wall,
         '.' => Tile::Blank,
@@ -93,8 +93,8 @@ fn count_keys(graph: &Graph) -> usize {
     graph.iter().filter(|(k, _)| k.is_lowercase()).count()
 }
 
-fn search(graph: Graph) -> Option<usize> {
-    let key_count = count_keys(&graph);
+fn search(graph: &Graph) -> Option<usize> {
+    let key_count = count_keys(graph);
     let mut priority_queue = BinaryHeap::from([State {
         steps: 0,
         node: '@',
@@ -108,7 +108,7 @@ fn search(graph: Graph) -> Option<usize> {
         }
         let next_options = cache
             .entry((current.node, current.keys.clone()))
-            .or_insert_with(|| search_keys(&graph, &current.keys, current.node));
+            .or_insert_with(|| search_keys(graph, &current.keys, current.node));
         for &(next_node, cost) in next_options.iter() {
             let mut next_keys = current.keys.clone();
             next_keys.insert(next_node);
@@ -165,7 +165,7 @@ fn search_keys(graph: &Graph, keys: &BTreeSet<char>, start: char) -> Vec<(char, 
             reach.insert(node);
             continue;
         }
-        for (&next_node, &next_cost) in graph[&node].iter() {
+        for (&next_node, &next_cost) in &graph[&node] {
             if next_node.is_uppercase() && !keys.contains(&next_node.to_ascii_lowercase()) {
                 continue;
             }
@@ -185,7 +185,7 @@ fn search_keys(graph: &Graph, keys: &BTreeSet<char>, start: char) -> Vec<(char, 
 pub fn part_1(input: &str) -> usize {
     let grid = parse(input);
     let graph = build_graph(&grid);
-    search(graph).unwrap()
+    search(&graph).unwrap()
 }
 
 // modify grid to split map into 4 sections
@@ -206,8 +206,8 @@ fn four_robots(grid: &mut HashMap<V2, Tile>) {
     grid.insert(V2(robot_coord.0 + 1, robot_coord.1 - 1), Tile::Node('$'));
 }
 
-fn search_four(graph: Graph) -> Option<usize> {
-    let key_count = count_keys(&graph);
+fn search_four(graph: &Graph) -> Option<usize> {
+    let key_count = count_keys(graph);
     let robots = ['@', '=', '%', '$'];
     let mut priority_queue = BinaryHeap::from([FourState {
         steps: 0,
@@ -223,7 +223,7 @@ fn search_four(graph: Graph) -> Option<usize> {
         for (robot_number, &robot_location) in current.robots.iter().enumerate() {
             let next_options = cache
                 .entry((robot_location, current.keys.clone()))
-                .or_insert_with(|| search_keys(&graph, &current.keys, robot_location));
+                .or_insert_with(|| search_keys(graph, &current.keys, robot_location));
             for &(next_node, cost) in next_options.iter() {
                 let mut next_keys = current.keys.clone();
                 next_keys.insert(next_node);
@@ -273,7 +273,7 @@ pub fn part_2(input: &str) -> usize {
     let mut grid = parse(input);
     four_robots(&mut grid);
     let graph = build_graph(&grid);
-    search_four(graph).unwrap()
+    search_four(&graph).unwrap()
 }
 
 #[cfg(test)]
