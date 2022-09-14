@@ -1,36 +1,31 @@
-use std::collections::{BTreeMap, BinaryHeap, HashMap, HashSet, VecDeque};
+use std::{
+    cmp,
+    collections::{BinaryHeap, HashMap, HashSet, VecDeque},
+};
 
 use utils::v2::V2;
 
-type Maze = HashMap<V2, char>;
-
 pub fn part_a(input: &str) -> usize {
-    let maze = make_maze(input);
-    let graph = Graph::new(&maze);
+    let maze = Maze::new(input);
+    let graph = Graph::new(maze);
     graph.solve().unwrap()
 }
 
-fn make_maze(input: &str) -> Maze {
-    utils::parse_grid(input)
-        .filter(|&(_, c)| c == '.' || c.is_ascii_alphabetic())
-        .collect()
-}
-
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 struct Graph {
     start: V2,
     end: V2,
-    edges: HashMap<V2, Vec<(V2, usize)>>,
+    edges: HashMap<V2, HashMap<V2, usize>>,
 }
 
 impl Graph {
-    fn new(maze: &Maze) -> Self {
+    fn new(maze: Maze) -> Self {
         let mut graph = Graph {
             start: V2(0, 0),
             end: V2(0, 0),
             edges: HashMap::new(),
         };
-        let nodes = graph.discover_nodes(maze);
+        let nodes = graph.discover_nodes(&maze);
         for &node in &nodes {
             graph.explore_out(node, &nodes, &maze);
         }
@@ -40,29 +35,17 @@ impl Graph {
     fn discover_nodes(&mut self, maze: &Maze) -> HashSet<V2> {
         let mut unmatched_portals = HashMap::new();
         let mut nodes = HashSet::new();
-        for (&pos, &c1) in maze {
-            if c1 == '.' {
-                continue;
+        for (portal_key, portal) in maze.portals() {
+            nodes.insert(portal);
+            if let Some(other) = unmatched_portals.remove(&portal_key) {
+                self.add_edge(portal, other, 1);
+                self.add_edge(other, portal, 1);
+            } else {
+                unmatched_portals.insert(portal_key, portal);
             }
-            if let Some((c2, portal_entrance)) = node_at_point(maze, pos) {
-                nodes.insert(portal_entrance);
-                let label = order(c1, c2);
-                if label == ('A', 'A') {
-                    self.start = portal_entrance;
-                } else if label == ('Z', 'Z') {
-                    self.end = portal_entrance;
-                }
-                if let Some(other_portal_entrance) = unmatched_portals.remove(&label) {
-                    self.add_portal(portal_entrance, other_portal_entrance);
-                } else {
-                    unmatched_portals.insert(label, portal_entrance);
-                }
-            };
         }
-        assert_eq!(
-            unmatched_portals,
-            HashMap::from([(('A', 'A'), self.start), (('Z', 'Z'), self.end)])
-        );
+        self.start = unmatched_portals.remove(&('A', 'A')).unwrap();
+        self.end = unmatched_portals.remove(&('Z', 'Z')).unwrap();
         nodes
     }
 
@@ -70,63 +53,91 @@ impl Graph {
         let mut visited = HashSet::from([start]);
         let mut queue = VecDeque::from([(start, 0)]);
         while let Some((pos, distance)) = queue.pop_front() {
-            visited.insert(pos);
             if nodes.contains(&pos) && pos != start {
-                self.edges.entry(start).or_default().push((pos, distance));
+                self.add_edge(start, pos, distance);
             }
             for neighbour in pos.taxicab_directions() {
-                if maze.contains_key(&neighbour) && !visited.contains(&neighbour) {
+                if maze.has_point(&neighbour) && visited.insert(neighbour) {
                     queue.push_back((neighbour, distance + 1));
                 }
             }
         }
     }
 
-    fn add_portal(&mut self, pos1: V2, pos2: V2) {
-        self.edges.entry(pos1).or_default().push((pos2, 1));
-        self.edges.entry(pos2).or_default().push((pos1, 1));
+    fn add_edge(&mut self, from: V2, to: V2, new_dist: usize) {
+        let edges_of_from = self.edges.entry(from).or_default();
+        if let Some(dist) = edges_of_from.get_mut(&to) {
+            *dist = cmp::min(*dist, new_dist);
+        } else {
+            edges_of_from.insert(to, new_dist);
+        }
     }
 
     fn solve(&self) -> Option<usize> {
-        let mut priority_queue = BinaryHeap::from([State {
-            position: self.start,
-            distance: 0,
-        }]);
+        let mut to_visit = BinaryHeap::from([State::new(self.start, 0)]);
+        let mut distances = HashMap::from([(self.start, 0)]);
         let mut visited = HashSet::new();
-        while let Some(state) = priority_queue.pop() {
-            visited.insert(state.position);
-            if state.position == self.end {
-                return Some(state.distance);
+        while let Some(State { position, distance }) = to_visit.pop() {
+            if !visited.insert(position) {
+                continue;
             }
-            let nexts = self.edges[&state.position]
-                .iter()
-                .filter(|&(np, _)| !visited.contains(np))
-                .map(|(new_pos, d)| State::new(*new_pos, state.distance + d));
-            priority_queue.extend(nexts);
+            for (neighbour, cost) in &self.edges[&position] {
+                let new_distance = distance + cost;
+                let is_shorter = distances
+                    .get(neighbour)
+                    .map_or(true, |&current| new_distance < current);
+                if is_shorter {
+                    distances.insert(*neighbour, new_distance);
+                    to_visit.push(State::new(*neighbour, new_distance));
+                }
+            }
         }
-        None
+        distances.get(&self.end).copied()
     }
 }
 
-fn order(a: char, b: char) -> (char, char) {
-    if a < b {
-        (a, b)
-    } else {
-        (b, a)
-    }
+#[derive(Debug, PartialEq, Eq)]
+struct Maze {
+    maze: HashMap<V2, char>,
 }
 
-fn node_at_point(maze: &Maze, pos: V2) -> Option<(char, V2)> {
-    pos.taxicab_directions().into_iter().find_map(|neighbour| {
-        let open_tile = pos + (pos - neighbour);
-        match (maze.get(&neighbour), maze.get(&open_tile)) {
-            (Some(&c), Some('.')) if c.is_ascii_alphabetic() => Some((c, open_tile)),
+impl Maze {
+    fn new(input: &str) -> Maze {
+        let maze = utils::parse_grid(input)
+            .filter(|&(_, c)| c == '.' || c.is_ascii_alphabetic())
+            .collect();
+        Maze { maze }
+    }
+
+    fn node_at_point(&self, pos: V2) -> Option<((char, char), V2)> {
+        let above = pos - V2(1, 0);
+        let below = pos + V2(1, 0);
+        let left = pos - V2(0, 1);
+        let right = pos + V2(0, 1);
+        let f = |pos: V2| self.maze.get(&pos);
+        let p = |c1: char, c2: char| c1.is_ascii_alphabetic() && c2.is_ascii_alphabetic();
+        match (f(above), f(left), f(pos), f(right), f(below)) {
+            (Some(&c1), _, Some(&c2), _, Some(&'.')) if p(c1, c2) => Some(((c1, c2), below)),
+            (Some(&'.'), _, Some(&c1), _, Some(&c2)) if p(c1, c2) => Some(((c1, c2), above)),
+            (_, Some(&c1), Some(&c2), Some(&'.'), _) if p(c1, c2) => Some(((c1, c2), right)),
+            (_, Some(&'.'), Some(&c1), Some(&c2), _) if p(c1, c2) => Some(((c1, c2), left)),
             _ => None,
         }
-    })
+    }
+
+    fn portals(&self) -> impl Iterator<Item = ((char, char), V2)> + '_ {
+        self.maze
+            .iter()
+            .filter(|(_, &c)| c != '.')
+            .filter_map(|(pos, _)| self.node_at_point(*pos))
+    }
+
+    pub fn has_point(&self, k: &V2) -> bool {
+        self.maze.contains_key(k)
+    }
 }
 
-#[derive(PartialEq, Eq, Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 struct State {
     position: V2,
     distance: usize,
@@ -150,6 +161,14 @@ impl PartialOrd for State {
     }
 }
 
+impl PartialEq for State {
+    fn eq(&self, other: &Self) -> bool {
+        self.distance.eq(&other.distance)
+    }
+}
+
+impl Eq for State {}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -159,7 +178,7 @@ mod tests {
 
     #[test]
     fn parse_test() {
-        let graph = Graph::new(&make_maze(EX_1));
+        let graph = Graph::new(Maze::new(EX_1));
         let actual: HashSet<V2> = graph.edges.keys().copied().collect();
         let expected = HashSet::from([
             V2(2, 9),
@@ -171,14 +190,6 @@ mod tests {
             V2(15, 2),
             V2(16, 13),
         ]);
-        assert_eq!(expected, actual);
-    }
-
-    #[test]
-    fn portal_test() {
-        let maze = make_maze(EX_1);
-        let actual = node_at_point(&maze, V2(1, 9));
-        let expected = Some(('A', V2(2, 9)));
         assert_eq!(expected, actual);
     }
 
@@ -201,6 +212,17 @@ mod tests {
     fn part_a_test() {
         assert_eq!(part_a(EX_1), 23);
         assert_eq!(part_a(EX_2), 58);
+    }
+
+    #[test]
+    fn idempotence() {
+        let input = include_str!("input.txt");
+        let maze1 = Maze::new(input);
+        let maze2 = Maze::new(input);
+        assert_eq!(maze1, maze2, "mazes are different");
+        let graph1 = Graph::new(maze1);
+        let graph2 = Graph::new(maze2);
+        assert_eq!(graph1, graph2, "graphs are different");
     }
 
     #[test]
