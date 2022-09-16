@@ -46,7 +46,7 @@ fn reachable_from(grid: &Grid, start: V2) -> HashMap<char, usize> {
     let mut result = HashMap::new();
     let mut queue = VecDeque::from([(start, 0)]);
     while let Some((current_pos, steps)) = queue.pop_front() {
-        for neighbour in &current_pos.taxicab_directions() {
+        for neighbour in &current_pos.taxicab_neighbours() {
             if let Some(tile) = grid.get(neighbour) {
                 if visited.contains(neighbour) {
                     continue;
@@ -197,7 +197,7 @@ fn four_robots(grid: &mut HashMap<V2, Tile>) {
         .unwrap();
 
     grid.insert(robot_coord, Tile::Wall);
-    for &neighbour in &robot_coord.taxicab_directions() {
+    for &neighbour in &robot_coord.taxicab_neighbours() {
         grid.insert(neighbour, Tile::Wall);
     }
     grid.insert(V2(robot_coord.0 - 1, robot_coord.1 - 1), Tile::Node('@'));

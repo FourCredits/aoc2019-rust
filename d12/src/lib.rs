@@ -16,11 +16,11 @@ pub fn part_b(input: &str) -> i64 {
     while repetitions.iter().any(Option::is_none) {
         n += 1;
         tick(&mut moons);
-        (0..=2).for_each(|i| {
+        for i in 0..=2 {
             if repetitions[i].is_none() && get_axis(&moons, i) == axes[i] {
                 repetitions[i] = Some(n);
             }
-        });
+        }
     }
     repetitions
         .iter()

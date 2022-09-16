@@ -2,13 +2,12 @@ pub fn part_a(input: &str) -> i64 {
     let orbits = parse_orbits(input);
     let mut to_process = vec![("COM", 0)];
     let mut total = 0;
-    while !to_process.is_empty() {
-        let (body, num_orbits) = to_process.pop().unwrap();
+    while let Some((body, num_orbits)) = to_process.pop() {
         total += num_orbits;
         orbits
             .iter()
             .filter(|(k, _)| *k == body)
-            .for_each(|pair| to_process.push((pair.1, num_orbits + 1)));
+            .for_each(|(_, v)| to_process.push((v, num_orbits + 1)))
     }
     total
 }

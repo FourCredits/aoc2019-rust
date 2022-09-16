@@ -23,25 +23,21 @@ fn matches_criteria2(n: u64) -> bool {
 }
 
 fn group_of_two(digits: &[u8]) -> bool {
-    for i in 0..(digits.len() - 1) {
-        if digits[i] == digits[i + 1] {
-            let left_ok = i == 0 || digits[i - 1] != digits[i];
-            let right_ok = digits.get(i + 2).map_or(true, |&a| a != digits[i]);
-            if left_ok && right_ok {
-                return true;
-            }
-        }
-    }
-    false
+    (0..(digits.len() - 1)).any(|i| {
+        digits[i] == digits[i + 1]
+            && (i == 0 || digits[i - 1] != digits[i])
+            && digits.get(i + 2).map_or(true, |&a| a != digits[i])
+    })
 }
 
 fn digits(mut n: u64) -> Vec<u8> {
-    let mut res = Vec::new();
+    let mut result = Vec::new();
     while n > 0 {
-        res.push((n % 10).try_into().unwrap());
+        result.push((n % 10) as u8);
         n /= 10;
     }
-    res.into_iter().rev().collect()
+    result.reverse();
+    result
 }
 
 #[cfg(test)]

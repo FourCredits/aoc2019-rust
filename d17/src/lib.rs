@@ -25,7 +25,7 @@ pub fn part_a(input: &str) -> i64 {
     map.iter()
         .filter_map(|(k, &v)| {
             if is_scaffold(v)
-                && k.taxicab_directions()
+                && k.taxicab_neighbours()
                     .iter()
                     .filter_map(|adj| map.get(adj).filter(|&&v| is_scaffold(v)))
                     .count()

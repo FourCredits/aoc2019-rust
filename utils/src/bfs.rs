@@ -50,7 +50,7 @@ mod tests {
         let map = [[1, 1, 1, 1, 1], [1, 0, 0, 0, 1], [1, 1, 1, 1, 1]];
         let start_pos = V2(1, 1);
         let neighbours = |&pos: &V2| {
-            pos.taxicab_directions()
+            pos.taxicab_neighbours()
                 .into_iter()
                 .filter(|&V2(x, y)| {
                     x >= 0
@@ -80,7 +80,7 @@ mod tests {
         ];
         let start_pos = V2(3, 1);
         let neighbours = |&pos: &V2| {
-            pos.taxicab_directions()
+            pos.taxicab_neighbours()
                 .into_iter()
                 .filter(|&V2(x, y)| {
                     x >= 0
@@ -121,7 +121,7 @@ mod tests {
         ];
         let start_pos = V2(3, 1);
         let neighbours = |&pos: &V2| {
-            pos.taxicab_directions()
+            pos.taxicab_neighbours()
                 .into_iter()
                 .filter(|&V2(x, y)| {
                     x >= 0

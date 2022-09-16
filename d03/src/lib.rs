@@ -1,12 +1,12 @@
 use std::collections::HashSet;
 
-pub fn part_a(input: &str) -> u64 {
+use utils::v2::V2;
+
+pub fn part_a(input: &str) -> i64 {
     let (wire1, wire2) = input.trim().split_once('\n').unwrap();
-    let wire1: HashSet<_> = make_path(wire1).into_iter().collect();
-    let wire2: HashSet<_> = make_path(wire2).into_iter().collect();
-    wire1
-        .intersection(&wire2)
-        .map(|&pos| manhattan_distance((0, 0), pos))
+    common_points(&make_path(wire1), &make_path(wire2))
+        .iter()
+        .map(|&pos| V2(0, 0).manhattan_distance(pos))
         .min()
         .unwrap()
 }
@@ -14,42 +14,40 @@ pub fn part_a(input: &str) -> u64 {
 pub fn part_b(input: &str) -> usize {
     let (wire1, wire2) = input.trim().split_once('\n').unwrap();
     let (wire1, wire2) = (make_path(wire1), make_path(wire2));
-    wire1
+    common_points(&wire1, &wire2)
         .iter()
-        .collect::<HashSet<_>>()
-        .intersection(&wire2.iter().collect::<HashSet<_>>())
         .map(|&pos| {
-            wire1.iter().position(|p| p == pos).unwrap()
-                + wire2.iter().position(|p| p == pos).unwrap()
+            wire1.iter().position(|&p| p == pos).unwrap()
+                + wire2.iter().position(|&p| p == pos).unwrap()
                 + 2
         })
         .min()
         .unwrap()
 }
 
-// TODO: these probably should be a method on V2s
-const fn manhattan_distance((y1, x1): (i64, i64), (y2, x2): (i64, i64)) -> u64 {
-    (i64::abs(y2 - y1) + i64::abs(x2 - x1)) as u64
+fn common_points(wire1: &Vec<V2>, wire2: &Vec<V2>) -> HashSet<V2> {
+    let set1: HashSet<_> = wire1.iter().collect();
+    let set2: HashSet<_> = wire2.iter().collect();
+    set1.intersection(&set2).map(|p| **p).collect()
 }
 
-fn make_path(path: &str) -> Vec<(i64, i64)> {
-    let (mut y, mut x) = (0, 0);
-    let mut res = Vec::new();
+fn make_path(path: &str) -> Vec<V2> {
+    let mut position = V2(0, 0);
+    let mut result = Vec::new();
     for line in path.split(',') {
-        let (dy, dx) = match line.chars().next().unwrap() {
-            'R' => (0, 1),
-            'L' => (0, -1),
-            'U' => (1, 0),
-            'D' => (-1, 0),
+        let direction = match line.as_bytes()[0] {
+            b'R' => V2(0, 1),
+            b'L' => V2(0, -1),
+            b'U' => V2(1, 0),
+            b'D' => V2(-1, 0),
             _ => unreachable!(),
         };
         for _ in 0..line[1..].parse::<u64>().unwrap() {
-            y += dy;
-            x += dx;
-            res.push((y, x));
+            position += direction;
+            result.push(position);
         }
     }
-    res
+    result
 }
 
 #[cfg(test)]

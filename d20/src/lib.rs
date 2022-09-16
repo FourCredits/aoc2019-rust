@@ -56,7 +56,7 @@ impl Graph {
             if nodes.contains(&pos) && pos != start {
                 self.add_edge(start, pos, distance);
             }
-            for neighbour in pos.taxicab_directions() {
+            for neighbour in pos.taxicab_neighbours() {
                 if maze.has_point(&neighbour) && visited.insert(neighbour) {
                     queue.push_back((neighbour, distance + 1));
                 }

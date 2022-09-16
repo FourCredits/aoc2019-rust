@@ -24,7 +24,7 @@ fn time_oxygen_spread(map: &HashMap<(i64, i64), i64>) -> i64 {
     let mut queue = VecDeque::from([(oxygen_system, 0)]);
     while let Some((pos, elapsed_time)) = queue.pop_front() {
         oxygen_spread.insert(pos, elapsed_time);
-        for new_pos in taxicab_directions(pos) {
+        for new_pos in taxicab_neighbours(pos) {
             if !oxygen_spread.contains_key(&new_pos) && matches!(map.get(&new_pos), Some(1 | 2)) {
                 queue.push_back((new_pos, elapsed_time + 1));
             }
@@ -43,7 +43,7 @@ fn shortest_path(map: &HashMap<(i64, i64), i64>) -> Option<i64> {
             return Some(path_length);
         }
         visited.insert(pos);
-        for new_pos in taxicab_directions(pos) {
+        for new_pos in taxicab_neighbours(pos) {
             if !visited.contains(&new_pos) && matches!(map.get(&new_pos), Some(1 | 2)) {
                 queue.push_back((new_pos, path_length + 1));
             }
@@ -52,7 +52,7 @@ fn shortest_path(map: &HashMap<(i64, i64), i64>) -> Option<i64> {
     None
 }
 
-fn taxicab_directions(pos: (i64, i64)) -> Vec<(i64, i64)> {
+fn taxicab_neighbours(pos: (i64, i64)) -> Vec<(i64, i64)> {
     vec![
         (pos.0 + 1, pos.1),
         (pos.0 - 1, pos.1),

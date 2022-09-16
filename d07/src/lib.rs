@@ -23,16 +23,15 @@ pub fn part_a(input: &str) -> i64 {
     permutations(&[0, 1, 2, 3, 4])
         .into_iter()
         .map(|inputs| {
-            let mut intermediate_value = 0;
-            for phase_setting in inputs {
-                let mut computer = IntcodeComputer::new(
-                    amplifier_controller_software.clone(),
-                    Some(vec![phase_setting, intermediate_value]),
-                );
-                computer.run();
-                intermediate_value = computer.output.pop().unwrap();
-            }
-            intermediate_value
+            inputs
+                .into_iter()
+                .fold(0, |intermediate_value, phase_setting| {
+                    let computer = IntcodeComputer::run_program(
+                        amplifier_controller_software.clone(),
+                        Some(vec![phase_setting, intermediate_value]),
+                    );
+                    *computer.output.last().unwrap()
+                })
         })
         .max()
         .unwrap()
