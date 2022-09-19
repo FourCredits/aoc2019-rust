@@ -30,5 +30,6 @@ mod tests {
     fn real() {
         let input = include_str!("input.txt");
         assert_eq!(part_a(input), 632);
+        assert_eq!(part_b(input), 7162);
     }
 }
