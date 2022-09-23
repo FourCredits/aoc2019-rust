@@ -128,6 +128,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "d21"
+version = "0.1.0"
+dependencies = [
+ "intcode",
+]
+
+[[package]]
+name = "d22"
+version = "0.1.0"
+
+[[package]]
 name = "intcode"
 version = "0.1.0"
 
