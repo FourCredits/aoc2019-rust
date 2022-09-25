@@ -3,29 +3,28 @@ use std::num::ParseIntError;
 use modexp::{modexp, BigInt};
 
 pub fn part_a(input: &str) -> isize {
-    let size = 10_007;
     parse(input)
         .unwrap()
         .iter()
-        .fold(2019, |pos, shuffle| shuffle.perform(pos, size))
+        .fold(2019, |pos, shuffle| shuffle.perform(pos, 10_007))
 }
 
+// Adapted from https://github.com/tginsberg/advent-2019-kotlin/blob/master/src/main/kotlin/com/ginsberg/advent2019/Day22.kt
+// Don't really understand it, but then, neither did they
 pub fn part_b(input: &str) -> BigInt {
-    let shuffles = parse(input).unwrap();
     let num_cards: BigInt = 119315717514047_isize.into();
     let num_shuffles: BigInt = 101741582076661_isize.into();
     let mut memory0: BigInt = 1.into();
     let mut memory1: BigInt = 0.into();
     let find = 2020;
-    for instruction in shuffles.iter().rev() {
+    for instruction in parse(input).unwrap().iter().rev() {
         match instruction {
             Shuffle::Cut(n) => {
                 memory1 = memory1 + n;
             }
             Shuffle::Increment(n) => {
-                let n = BigInt::from(*n);
-                let t = modexp(n, num_cards.clone() - 2, num_cards.clone());
-                memory0 = memory0 * t.clone();
+                let t = BigInt::from(*n).modpow(&(&num_cards - 2), &num_cards);
+                memory0 = memory0 * &t;
                 memory1 = memory1 * t;
             }
             Shuffle::NewStack => {
@@ -34,10 +33,10 @@ pub fn part_b(input: &str) -> BigInt {
             }
         }
     }
-    let power = modexp(memory0.clone(), num_shuffles, num_cards.clone());
-    ((power.clone() * find)
-        + ((memory1 * (power + num_cards.clone() - 1))
-            * modexp(memory0 - 1, num_cards.clone() - 2, num_cards.clone())))
+    let power = memory0.modpow(&num_shuffles, &num_cards);
+    ((&power * find)
+        + ((memory1 * (power + &num_cards - 1))
+            * modexp(memory0 - 1, &num_cards - 2, num_cards.clone())))
         % num_cards
 }
 
