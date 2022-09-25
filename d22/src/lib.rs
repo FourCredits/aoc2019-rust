@@ -1,72 +1,94 @@
-pub fn part_a(input: &str) -> Option<usize> {
-    let shuffles = parse(input)?;
-    let deck = run(10_007, shuffles);
-    deck.iter().position(|&n| n == 2019)
+use std::num::ParseIntError;
+
+use modexp::{modexp, BigInt};
+
+pub fn part_a(input: &str) -> isize {
+    let size = 10_007;
+    parse(input)
+        .unwrap()
+        .iter()
+        .fold(2019, |pos, shuffle| shuffle.perform(pos, size))
 }
 
-fn run(size: u32, shuffles: Vec<Shuffle>) -> Vec<u32> {
-    let mut deck = new_deck(size);
-    for shuffle in shuffles {
-        shuffle.perform(&mut deck);
+pub fn part_b(input: &str) -> BigInt {
+    let shuffles = parse(input).unwrap();
+    let num_cards: BigInt = 119315717514047_isize.into();
+    let num_shuffles: BigInt = 101741582076661_isize.into();
+    let mut memory0: BigInt = 1.into();
+    let mut memory1: BigInt = 0.into();
+    let find = 2020;
+    for instruction in shuffles.iter().rev() {
+        match instruction {
+            Shuffle::Cut(n) => {
+                memory1 = memory1 + n;
+            }
+            Shuffle::Increment(n) => {
+                let n = BigInt::from(*n);
+                let t = modexp(n, num_cards.clone() - 2, num_cards.clone());
+                memory0 = memory0 * t.clone();
+                memory1 = memory1 * t;
+            }
+            Shuffle::NewStack => {
+                memory0 = -memory0;
+                memory1 = (memory1 + 1) * -1;
+            }
+        }
     }
-    deck
+    let power = modexp(memory0.clone(), num_shuffles, num_cards.clone());
+    ((power.clone() * find)
+        + ((memory1 * (power + num_cards.clone() - 1))
+            * modexp(memory0 - 1, num_cards.clone() - 2, num_cards.clone())))
+        % num_cards
 }
 
-fn parse(input: &str) -> Option<Vec<Shuffle>> {
-    input.trim().lines().map(parse_line).collect()
-}
-
-fn parse_line(line: &str) -> Option<Shuffle> {
-    // Is this the best way to do this? Probably not, but my inner functional
-    // programmer is very happy at this code
-    let option_1 = line
-        .strip_prefix("cut ")
-        .and_then(|rest| rest.parse().ok())
-        .map(|n| Shuffle::Cut(n));
-    let option_2 = line
-        .strip_prefix("deal with increment ")
-        .and_then(|rest| rest.parse().ok())
-        .map(|n| Shuffle::Increment(n));
-    let option_3 = (line == "deal into new stack").then_some(Shuffle::NewStack);
-    option_1.or(option_2).or(option_3)
+fn parse(input: &str) -> Result<Vec<Shuffle>, ParseError> {
+    input.trim().lines().map(|l| l.try_into()).collect()
 }
 
 #[derive(PartialEq, Debug)]
 enum Shuffle {
     NewStack,
-    Cut(i32),
-    Increment(usize),
+    Cut(isize),
+    Increment(isize),
 }
 
 impl Shuffle {
-    fn perform(self, deck: &mut [u32]) {
+    /// Performs the function, mapping `pos` from its current place in a deck of size
+    /// `size` and returns its position in the deck shuffled according to the given rule.
+    fn perform(&self, pos: isize, size: isize) -> isize {
         match self {
-            Shuffle::NewStack => deck.reverse(),
-            Shuffle::Cut(i) => deck.rotate_left(bring_in_range(i, deck.len())),
-            Shuffle::Increment(amount) => deal_with_increment(deck, amount),
+            Shuffle::NewStack => size - (pos + 1),
+            Shuffle::Cut(n) => (pos - n).rem_euclid(size),
+            Shuffle::Increment(n) => (pos * n) % size,
         }
     }
 }
 
-fn deal_with_increment(deck: &mut [u32], increment: usize) {
-    let mut new = vec![u32::MAX; deck.len()];
-    for (i, card) in deck.iter().enumerate() {
-        new[i * increment % deck.len()] = *card;
-    }
-    debug_assert!(new.iter().all(|&n| n != u32::MAX));
-    deck.copy_from_slice(&new);
-}
-
-fn bring_in_range(num: i32, denom: usize) -> usize {
-    if num < 0 {
-        (num + denom as i32) as usize
-    } else {
-        num as usize
+impl TryFrom<&str> for Shuffle {
+    type Error = ParseError;
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        if value == "deal into new stack" {
+            Ok(Shuffle::NewStack)
+        } else if let Some(n) = value.strip_prefix("cut ") {
+            Ok(Shuffle::Cut(n.parse()?))
+        } else if let Some(n) = value.strip_prefix("deal with increment ") {
+            Ok(Shuffle::Increment(n.parse()?))
+        } else {
+            Err(ParseError::InvalidRule)
+        }
     }
 }
 
-fn new_deck(size: u32) -> Vec<u32> {
-    (0..size).collect()
+#[derive(PartialEq, Debug)]
+enum ParseError {
+    InvalidRule,
+    InvalidNumber(ParseIntError),
+}
+
+impl From<ParseIntError> for ParseError {
+    fn from(e: ParseIntError) -> Self {
+        ParseError::InvalidNumber(e)
+    }
 }
 
 #[cfg(test)]
@@ -74,36 +96,12 @@ mod tests {
     use super::*;
 
     #[test]
-    fn new_stack_test() {
-        let deck = run(10, vec![Shuffle::NewStack]);
-        assert_eq!(deck, vec![9, 8, 7, 6, 5, 4, 3, 2, 1, 0]);
-    }
-
-    #[test]
-    fn cut_test() {
-        let deck = run(10, vec![Shuffle::Cut(3)]);
-        assert_eq!(deck, vec![3, 4, 5, 6, 7, 8, 9, 0, 1, 2]);
-    }
-
-    #[test]
-    fn cut_negative_test() {
-        let deck = run(10, vec![Shuffle::Cut(-4)]);
-        assert_eq!(deck, vec![6, 7, 8, 9, 0, 1, 2, 3, 4, 5]);
-    }
-
-    #[test]
-    fn increment_test() {
-        let deck = run(10, vec![Shuffle::Increment(3)]);
-        assert_eq!(deck, vec![0, 7, 4, 1, 8, 5, 2, 9, 6, 3]);
-    }
-
-    #[test]
     fn parse_test() {
         let text = "cut -6
 deal with increment 7
 deal into new stack";
         let shuffles = parse(text);
-        let expected = Some(vec![
+        let expected = Ok(vec![
             Shuffle::Cut(-6),
             Shuffle::Increment(7),
             Shuffle::NewStack,
@@ -112,45 +110,16 @@ deal into new stack";
     }
 
     #[test]
-    fn examples() {
-        let examples = vec![
-            "deal with increment 7
-deal into new stack
-deal into new stack",
-            "cut 6
-deal with increment 7
-deal into new stack",
-            "deal with increment 7
-deal with increment 9
-cut -2",
-            "deal into new stack
-cut -2
-deal with increment 7
-cut 8
-cut -4
-deal with increment 7
-cut 3
-deal with increment 9
-deal with increment 3
-cut -1",
-        ];
-        let results = vec![
-            vec![0, 3, 6, 9, 2, 5, 8, 1, 4, 7],
-            vec![3, 0, 7, 4, 1, 8, 5, 2, 9, 6],
-            vec![6, 3, 0, 7, 4, 1, 8, 5, 2, 9],
-            vec![9, 2, 5, 8, 1, 4, 7, 0, 3, 6],
-        ];
-        for (text, expected) in std::iter::zip(examples, results) {
-            let shuffles = parse(text).unwrap();
-            let deck = run(10, shuffles);
-            assert_eq!(expected, deck);
-        }
+    fn part_a_test() {
+        let input = include_str!("input.txt");
+        assert_eq!(part_a(input), 4086);
     }
 
-    // 2808 too low
     #[test]
-    fn real() {
+    fn part_b_test() {
         let input = include_str!("input.txt");
-        assert_eq!(part_a(input), Some(4086));
+        let result = part_b(input);
+        println!("{}", result);
+        assert_eq!(result, 1041334417227_isize.into());
     }
 }
