@@ -148,6 +148,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "d23"
+version = "0.1.0"
+dependencies = [
+ "intcode",
+]
+
+[[package]]
 name = "fuchsia-cprng"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
